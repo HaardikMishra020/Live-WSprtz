@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat</title>
+    <style>
+        body{
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            margin: 0;
+            padding: 20px;
+        }
+        #log {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            padding: 10px;
+            height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #333;
+            margin-bottom: 10px;
+        }
+        .status-on {
+            color: #00ff00;
+        }
+        .status-off {
+            color: #ff0000;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Chat</h1>
+    <p id ="status" class="status-off">Connecting...</p>
+
+    <form id="message-form">
+        <input type="text" id="message-input" placeholder="Send msg..." required />
+        <button type = "submit">Deploy Msg</button>
+    </form>
+    <h3>Live Stream Logs:</h3>
+    <pre id="log"></pre>
+</body>
+<script>
+    const statusEl = document.getElementById('status');
+    const log = document.getElementById('log');
+    const input = document.getElementById('message-input');
+
+    const socket = new WebSocket('ws://localhost:8080');
+
+    const appendLog = (label,message) => {
+        const entry = `${new Date().toLocaleTimeString()} - ${label} ${message}\n`
+        log.textContent += entry ;
+    };
+
+    socket.addEventListener('open', function (event) {
+        statusEl.textContent = 'Connected: ws://localhost:8080';
+        statusEl.className = 'status-on';
+        appendLog('SYSTEM', 'WebSocket connection established.');
+    });
+
+
+    socket.addEventListener('close', function (event) {
+        statusEl.textContent = 'Disconnected';
+        statusEl.className = 'status-off';
+        appendLog('SYSTEM', 'WebSocket connection closed.');
+    });
+
+    socket.addEventListener('message', function (event) {
+        appendLog('RECEIVED', event.data);
+    });
+
+    document.getElementById('message-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        if (socket.readyState !== WebSocket.OPEN) {
+            appendLog('SYSTEM', 'Cannot send message: WebSocket is not open.');
+            return;
+        }
+        const message = input.value;
+        socket.send(message);
+        appendLog('SENT', message);
+        input.value = '';
+    });
+</script>
+</html>
